@@ -1,0 +1,57 @@
+version: '3.7'
+
+services:
+  api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    networks:
+      - webnet
+    container_name: api
+    command: npm run start
+    depends_on:
+      - db
+
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    networks:
+      - webnet
+    container_name: client
+    command: npm run dev
+
+  webserver:
+    container_name: webserver
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - 8080:80
+    restart: always
+    networks:
+      - webnet
+
+  db:
+    container_name: db
+    image: postgres:12
+    restart: always
+    networks:
+      - webnet
+    environment:
+      POSTGRES_PASSWORD: secretpass
+      POSTGRES_USER: admin
+      POSTGRES_DB: db
+      PG_DATA: /var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./server/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./server/db/flats.csv:/var/lib/postgresql/csvs/flats.csv
+
+networks:
+  webnet:
+
+volumes:
+  pgdata:
